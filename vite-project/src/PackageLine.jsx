@@ -8,55 +8,88 @@ const TOTAL_PACKAGE_SPACE = PACKAGE_WIDTH_PERCENT + PACKAGE_MARGIN_PERCENT;
 
 const PackageLine = () => {
   const [packages, setPackages] = useState([]);
-  const [maxId, setMaxId] = useState(0); // čuva najveći ID
+  const [maxId, setMaxId] = useState(0);
 
-  // Dodavanje paketa svakih 2s
+  // Dodavanje novih paketa sa statusom "incoming"
   useEffect(() => {
     const interval = setInterval(() => {
       setPackages((prev) => {
         const newId = maxId + 1;
-        setMaxId(newId); // ažuriraj max ID
-        return [...prev, { id: newId, createdAt: Date.now() }];
+        setMaxId(newId);
+        return [
+          ...prev,
+          {
+            id: newId,
+            status: "incoming",
+            createdAt: Date.now(),
+          },
+        ];
       });
     }, 2000);
 
     return () => clearInterval(interval);
   }, [maxId]);
 
-  // Uklanjanje paketa nakon 10s
+  // Promjena statusa iz "incoming" u "queue" nakon 10s
   useEffect(() => {
-    const cleanupInterval = setInterval(() => {
+    const statusInterval = setInterval(() => {
+      const now = Date.now();
+
       setPackages((prev) =>
-        prev.filter((pkg) => Date.now() - pkg.createdAt < 10000)
+        prev
+          .map((pkg) => {
+            if (pkg.status === "incoming" && now - pkg.createdAt > 10000) {
+              return { ...pkg, status: "queue", updatedAt: now };
+            }
+            return pkg;
+          })
+          // Ukloni pakete starije od 20 sekundi (ukupno vrijeme)
+          .filter((pkg) => now - pkg.createdAt < 20000)
       );
     }, 1000);
 
-    return () => clearInterval(cleanupInterval);
+    return () => clearInterval(statusInterval);
   }, []);
 
+  // Razdvajanje po statusu
+  const incoming = packages.filter((p) => p.status === "incoming");
+  const queue = packages.filter((p) => p.status === "queue");
+
   return (
-    <div className="parent">
-      {packages.map((pkg, index) => (
-        <AnimatedPackage
-          key={pkg.id}
-          index={index}
-          label={`Paket #${index + 1}`}
-        />
-      ))}
+    <div>
+      <div className="track-label">📥 Incoming</div>
+      <div className="parent">
+        {incoming.map((pkg, index) => (
+          <AnimatedPackage
+            key={pkg.id}
+            index={index}
+            label={`Paket #${pkg.id}`}
+            top="30%"
+          />
+        ))}
+      </div>
+
+      <div className="track-label">📦 Queue</div>
+      <div className="parent second-line">
+        {queue.map((pkg, index) => (
+          <AnimatedPackage
+            key={`q-${pkg.id}`}
+            index={index}
+            label={`Queue #${pkg.id}`}
+            top="30%"
+          />
+        ))}
+      </div>
     </div>
   );
 };
 
-const AnimatedPackage = ({ index, label }) => {
+const AnimatedPackage = ({ index, label, top }) => {
   const [left, setLeft] = useState("0%");
 
   useEffect(() => {
     const targetLeft = `calc(100% - ${(index + 1) * TOTAL_PACKAGE_SPACE}%)`;
-
-    const timer = setTimeout(() => {
-      setLeft(targetLeft);
-    }, 50);
-
+    const timer = setTimeout(() => setLeft(targetLeft), 50);
     return () => clearTimeout(timer);
   }, [index]);
 
@@ -64,7 +97,8 @@ const AnimatedPackage = ({ index, label }) => {
     <Card
       className="child"
       style={{
-        left: left,
+        left,
+        top,
       }}
     >
       {label}

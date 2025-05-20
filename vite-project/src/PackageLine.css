@@ -4,18 +4,30 @@
   height: 200px;
   width: 1000px;
   overflow: hidden;
+  margin-bottom: 30px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+
+.second-line {
+  background-color: hsla(100, 50%, 30%, 0.4);
 }
 
 .child {
   position: absolute;
-  top: 30%;
-  width: 8%; /* Paket uži */
+  width: 8%;
   height: 40%;
   background-color: red;
   transition: left 1s linear, background-color 1s linear;
-  margin-right: 2%; /* možeš i ovo ostaviti za sigurnost, iako left se koristi */
 }
 
 .child[style*="left: calc"] {
   background-color: green;
+}
+
+.track-label {
+  font-weight: bold;
+  margin: 10px 0 5px;
+  font-size: 18px;
+  color: white;
 }
